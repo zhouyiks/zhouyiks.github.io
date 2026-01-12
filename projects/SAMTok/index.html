@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="keywords" content="Multimodal Large Language Models, Image Tokenizer">
+  <meta name="description" content="SAMTok provides a unified mask-token interface for MLLMs.">
+
+  <title>SAMTok: Representing Any Mask with Two Words</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/nunito@5.0.18/index.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/fontawesome.min.css">
+  <link rel="stylesheet" href="vendor/image-zoom.css">
+  <link rel="stylesheet" href="index.css">
+  <link rel="icon" href="assets/icon.png">
+
+  <script async src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/js/all.min.js"></script>
+  <script async src="vendor/image-zoom.js"></script>
+</head>
+
+
+<p align="center">
+   <a href="https://lxtgh.github.io/">Xiangtai Li</a><sup>2</sup>
+  <p align="center"><sup>1</sup>Wuhan University <sup>2</sup>ByteDance</p>
+</p>
+
+
+<body>
+    <section class="hero">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <img class="logo" src="assets/logo.png" alt="logo">
+          <h1 class="title publication-title is-bold">
+            <span>SAMTok: Representing Any Mask with Two Words</span>
+          </h1>
+          <div class="is-size-5 publication-author">
+            <span class="author-block">
+              <a href="https://scholar.google.com/citations?user=dZikW2YAAAAJ&hl=en&oi=ao" target="_blank">Yikang Zhou</a><sup>1,2</sup>,</span>
+            <span class="author-block">
+              <a href="https://scholar.google.com/citations?hl=zh-CN&user=3xu4a5oAAAAJ" target="_blank">Tao Zhang</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a target="_blank">Dengxian Gong</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a target="_blank">Yuanzheng Wu</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a target="_blank">Haochen Wang</a><sup>2</sup>,</span>
+            <span class="author-block">
+              <a target="_blank">Ye Tian</a><sup>2</sup>,</span>
+            <span class="author-block">
+              <a target="_blank">Haobo Yuan</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a target="_blank">Jiacong Wang</a><sup>2</sup>,</span>
+            <span class="author-block">
+              <a target="_blank">Lu Qi</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a target="_blank">Hao Fei</a><sup>1</sup>,</span>
+            <span class="author-block">
+              <a href="https://scholar.google.com/citations?hl=zh-CN&user=FjoRmF4AAAAJ" target="_blank">Shunping Ji</a><sup>1,✉️</sup>,</span>
+            <span class="author-block">
+              <a target="_blank">Anran Wang</a><sup>2</sup>,</span>
+            <span class="author-block">
+              <a target="_blank">Zhuochen Wang</a><sup>2</sup>,</span>
+            <span class="author-block">
+              <a target="_blank">Yujing Wang</a><sup>2</sup>,</span>
+            <span class="author-block">
+              <a target="_blank">Cheng CHEN</a><sup>2</sup>,</span>
+            <span class="author-block">
+              <a href="https://lxtgh.github.io/" target="_blank">Xiangtai Li</a><sup>2</sup>,</span>
+          </div>
+
+          <div class="is-size-5 publication-institution">
+            <span class="author-block"><sup>1</sup>Wuhan University</span>
+            <span class="author-block"><sup>2</sup>ByteDance</span>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <span class="link-block">
+                <a class="button is-normal is-rounded is-dark" href="https://github.com/bytedance/Sa2VA/tree/main" target="_blank">
+                  <i class="button-icon far fa-paper-plane"></i>
+                  <span>Paper</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a class="button is-normal is-rounded is-dark" href="https://github.com/bytedance/Sa2VA/tree/main" target="_blank">
+                  <i class="button-icon fa-brands fa-github"></i>
+                  <span>Code</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a class="button is-normal is-rounded is-dark" href="https://github.com/bytedance/Sa2VA/tree/main" target="_blank">
+                  <i class="button-icon fa-regular fa-lightbulb"></i>
+                  <span>Demo</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a class="button is-normal is-rounded is-dark" href="https://github.com/bytedance/Sa2VA/tree/main" target="_blank">
+                  <i class="button-icon fa-regular fa-envelope-open"></i>
+                  <span>Checkpoints</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title">Motivation</h2>
+          <div class="content has-text-justified">
+            <p>Building a concise yet powerful pixel-wise MLLM with strong scalability faces significant challenges:
+                <ul>
+                    <li><b>Mask inputs and mask outputs cannot be modeled in a unified manner—mask input understanding relies on complex region-level feature pooling designs, while mask output depends on carefully designed segmentation decoders. Although unified modeling can be achieved through alternative approaches such as bounding boxes or points, this comes at the cost of reduced precision and introduced ambiguity.</b></li>
+                    <li><b>Current state-of-the-art pixel-wise MLLMs cannot directly and concisely apply reinforcement learning (RL) to mask generation tasks, as they use continuous embeddings to connect the MLLM with the segmentation head.</b></li>
+                    <li><b>Specially designed modules added for mask understanding and generation capabilities typically require co-training with the MLLM, and the different training losses and forward pipelines introduce substantial complexity for scaling training with VQA and pure text data.</b></li>
+                    <li><b>Although some explorations attempt to circumvent these issues by treating masks as special images or representing them as text in formats similar to RLE encoding or polygon, this typically incurs enormous inference costs, with a single mask being represented by dozens or even hundreds of tokens.</b></li>
+                </ul>
+            </p>
+          </div>
+          <div class="finding-box", style="margin-top: -20px;">
+            <strong>How can we non-intrusively endow base MLLMs (such as the QwenVL series) with pixel-wise capabilities, making the learning process as simple as VQA training—requiring only next-token prediction loss for supervised fine-tuning (SFT) and straightforward reinforcement learning (RL)?</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title">Contributions</h2>
+          <img src="figures/teaser.png" alt="Teaser" data-zoom-image />
+          <figcaption>Figure 1</figcaption>
+          <div class="content has-text-justified">
+            <p>We propose SAMTok, a discrete mask tokenizer that can tokenize masks into textual special words and detokenize the textual special words into masks, which can transform masks into a new language for MLLMs to learn like regular text data. As shown in Figure 1, our proposed SAMTok can convert diverse masks into textual special tokens and accurately reconstruct the corresponding masks. Through SAMTok, any MLLM can acquire powerful pixel-wise capabilities by learning like language data through supervised fine-tuning and reinforcement learning, without any additional architectural modifications or specialized loss design.</p>
+            <p>In summary, our contributions are three-fold:
+                <ul>
+                    <li><b>We propose a novel paradigm for MLLMs to model masks as a new language, enabling them to learn mask understanding and generation capabilities just like natural language without requiring architecture modifications or additional loss design.</b></li>
+                    <li><b>We propose SAMTok, which can accurately achieve bidirectional conversion between masks and textual special tokens. Based on SAMTok, the QwenVL series of MLLMs acquire strong pixel-wise capabilities through next token prediction loss, achieving SOTA performance across dozens of diverse benchmarks.</b></li>
+                    <li><b>=We design a textual answer-matching reward function that enables MLLMs to perform reinforcement learning on mask generation tasks similar to natural language data, demonstrating significant performance improvements.</b></li>
+                </ul>
+            </p>
+        </div>
+      </div>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title">SAMTok</h2>
+          <img src="figures/tokenizer.png" alt="Tokenizer" data-zoom-image />
+          <figcaption>Figure 2</figcaption>
+          <div class="content has-text-justified">
+            <p>SAMTok has a encoder $f_{\text{enc}}$, a vector quantizer with codebook $\mathcal{C}$, and a decoder $f_{\text{dec}}$. Both $f_{\text{enc}}$ and $f_{\text{dec}}$ are instantiated with a SAM model, which includes an image backbone $f_{\text{img}}$, a prompt encoder $f_{\text{prm}}$, and a mask decoder $f_{\text{msk}}$. Given an input image $\mathcal{I}$ and a region $\mathcal{M}$ (e.g., the area outlined in purple), the SAMTok encoder $f_{\text{enc}}$ first encodes the 2D mask into a mask embedding $\mathbf{z}$, then performs two-stage quantization to obtain a discrete mask embeddings $[\mathbf{e}_1, \mathbf{e}_2]$. The SAMTok decoder $f_{\text{dec}}$ reconstructs the 2D mask $\hat{\mathcal{M}}$ from the original image and the region`s discrete mask embeddings.</p>
+          </div>
+          <img src="figures/vlm_samtok.png" alt="vlm_samtok" data-zoom-image />
+          <figcaption>Figure 3</figcaption>
+          <div class="content has-text-justified">
+            <p>For the mask understanding task, SAMTok first tokenizes region masks into quantization codes, then formats them into mask words, which are used in the MLLM prompt to refer to the corresponding image regions. For the mask generation task, the MLLM first produces mask words according to the instruction, then maps these mask words to quantization codes, after which SAMTok reconstructs the 2D masks.</p>
+          </div>
+      </div>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title">Experiments</h2>
+          <div class="content has-text-justified">
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/table1.png" alt="algebraic reasoning" width="100%"/>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/table2.png" alt="algebraic reasoning" width="100%"/>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/table3.png" alt="algebraic reasoning" width="100%"/>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/table4.png" alt="algebraic reasoning" width="100%"/>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/table5.png" alt="algebraic reasoning" width="100%"/>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/table6.png" alt="algebraic reasoning" width="100%"/>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/table7.png" alt="algebraic reasoning" width="100%"/>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/table8.png" alt="algebraic reasoning" width="100%"/>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/table9.png" alt="algebraic reasoning" width="100%"/>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/table10.png" alt="algebraic reasoning" width="100%"/>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/table11.png" alt="algebraic reasoning" width="100%"/>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title">Visualizations</h2>
+          <div class="content has-text-justified">
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/fig5.png" alt="algebraic reasoning" width="100%"/>
+                    <p>SFT vs. RL. Examples are sampled from the GRES benchmark. RL finds more target objects, localizes relative positions better, and produces cleaner masks than SFT across diverse scenes.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/fig6.png" alt="algebraic reasoning" width="100%"/>
+                    <p>Region mask reconstruction examples. For each region, the ground-truth mask is tokenized into two discrete codes, and SAMTok reconstructs the mask solely from the original image and the quantized mask tokens. SAMTok preserves fine structures for small, thin, or irregular objects even under challenging lighting or clutter. Since SAMTok is fully decoupled from the MLLM, its reconstruction quality remains stable regardless of downstream model training—unlike joint-training mask tokenizers that tend to collapse to elliptical or blurred masks.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/fig7.png" alt="algebraic reasoning" width="100%"/>
+                    <p>Panoptic scene graph generation(PSG) examples. The model predicts subject-relation-object triplets where both subject and object categories are paired with their corresponding segmentation masks, represented through mask tokens. SAMTok’s interface allows the MLLM to generate consistent object masks and relational descriptions simultaneously, demonstrating strong alignment between textual predicates and pixel-grounded regions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/fig8.png" alt="algebraic reasoning" width="100%"/>
+                    <p>GRES examples. Given a natural-language referring expression, the MLLM outputs two mask tokens that decode into the final segmentation mask. SAMTok enables precise grounding for expressions involving fine attributes, part-level targets, or contextual reasoning. The examples show robustness to ambiguous descriptions, occlusion, and multi-object scenes.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/fig9.png" alt="algebraic reasoning" width="100%"/>
+                    <p>Region Caption examples. Each visualization shows a region mask input (tokenized as two mask tokens) and the model’s generated description. SAMTok provides unambiguous spatial grounding, enabling the MLLM to generate accurate and context-aware region descriptions about attributes, roles, and interactions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="box m-5">
+                    <div class="content has-text-centered">
+                    <img src="figures/fig10.png" alt="algebraic reasoning" width="100%"/>
+                    <p>GCG examples. The model simultaneously describes the scene and produces region masks for phrases mentioned in the caption. For each highlighted phrase, SAMTok decodes the predicted mask tokens into segmentation masks. SAMTok’s compact representation (two tokens per mask) enables efficient, aligned text–mask generation with consistent grounding across multiple phrases within long captions.</p>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </section>
+
+    <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h3 class="title">Citation</h3>
+          <div class="caption">Please kindly cite our paper if you find this project helpful.</div>
+        </div>
+      </div>
+      <div class="columns is-centered">
+        <pre><code>@inproceedings{liu2025unipixel,<br>  title={UniPixel: Unified Object Referring and Segmentation for Pixel-Level Visual Reasoning},<br>  author={Liu, Ye and Ma, Zongyang and Pu, Junfu and Qi, Zhongang and Wu, Yang and Ying, Shan and Chen, Chang Wen},<br>  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},<br>  year={2025}<br>}</code></pre>
+      </div>
+    </div>
+    </section>
+
+</body>
+
