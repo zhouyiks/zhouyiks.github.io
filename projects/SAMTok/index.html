@@ -413,6 +413,113 @@
     </section>
 
 
+    <section class="section">
+    <div class="container" style="margin-bottom: 2vh;">
+        <div class="columns is-centered has-text-centered">
+            <div class="column is-four-fifths">
+                <h2 class="title">Visualizations</h2>
+                <div class="content has-text-justified">
+                    
+                    <!-- Table 1-3 轮播 -->
+                    <div class="custom-carousel">
+                        <h4 class="subtitle is-5 mb-4"></h4>
+                        <div id="experimentsCarousel1" class="carousel slide" data-bs-ride="carousel">
+                            <!-- 指示器 -->
+                            <div class="carousel-indicators">
+                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="2" aria-label="Slide 3"></button>
+                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="3" aria-label="Slide 4"></button>
+                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="4" aria-label="Slide 5"></button>
+                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="5" aria-label="Slide 6"></button>
+                            </div>
+                            
+                            <!-- 轮播项 -->
+                            <div class="carousel-inner">
+                                <div class="carousel-item active">
+                                    <div class="box m-3">
+                                        <div class="content has-text-centered">
+                                            <img src="figures/fig5.png" alt="SFT vs. RL" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
+                                        </div>
+                                    </div>
+                                    <div class="carousel-caption-box">
+                                        <p class="is-size-6">SFT vs. RL. Examples are sampled from the GRES benchmark. RL finds more target objects, localizes relative positions better, and produces cleaner masks than SFT across diverse scenes.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="carousel-item">
+                                    <div class="box m-3">
+                                        <div class="content has-text-centered">
+                                            <img src="figures/fig6.png" alt="Region mask reconstruction examples" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
+                                        </div>
+                                    </div>
+                                    <div class="carousel-caption-box">
+                                        <p class="is-size-6">Region mask reconstruction examples. For each region, the ground-truth mask is tokenized into two discrete codes, and SAMTok reconstructs the mask solely from the original image and the quantized mask tokens. SAMTok preserves fine structures for small, thin, or irregular objects even under challenging lighting or clutter. Since SAMTok is fully decoupled from the MLLM, its reconstruction quality remains stable regardless of downstream model training—unlike joint-training mask tokenizers that tend to collapse to elliptical or blurred masks.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="carousel-item">
+                                    <div class="box m-3">
+                                        <div class="content has-text-centered">
+                                            <img src="figures/fig7.png" alt="Panoptic scene graph generation(PSG) examples" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
+                                        </div>
+                                    </div>
+                                    <div class="carousel-caption-box">
+                                        <p class="is-size-6">Panoptic scene graph generation(PSG) examples. The model predicts subject–relation–object triplets where both subject and object categories are paired with their corresponding segmentation masks, represented through mask tokens. SAMTok’s interface allows the MLLM to generate consistent object masks and relational descriptions simultaneously, demonstrating strong alignment between textual predicates and pixel-grounded regions.</p>
+                                    </div>
+                                </div>
+
+                                <div class="carousel-item">
+                                    <div class="box m-3">
+                                        <div class="content has-text-centered">
+                                            <img src="figures/fig8.png" alt="GRES examples" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
+                                        </div>
+                                    </div>
+                                    <div class="carousel-caption-box">
+                                        <p class="is-size-6">GRES examples. Given a natural-language referring expression, the MLLM outputs two mask tokens that decode into the final segmentation mask. SAMTok enables precise grounding for expressions involving fine attributes, part-level targets, or contextual reasoning. The examples show robustness to ambiguous descriptions, occlusion, and multi-object scenes.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="carousel-item">
+                                    <div class="box m-3">
+                                        <div class="content has-text-centered">
+                                            <img src="figures/fig9.png" alt="Region Caption examples" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
+                                        </div>
+                                    </div>
+                                    <div class="carousel-caption-box">
+                                        <p class="is-size-6">Region Caption examples. Each visualization shows a region mask input (tokenized as two mask tokens) and the model’s generated description. SAMTok provides unambiguous spatial grounding, enabling the MLLM to generate accurate and context-aware region descriptions about attributes, roles, and interactions.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="carousel-item">
+                                    <div class="box m-3">
+                                        <div class="content has-text-centered">
+                                            <img src="figures/table10.png" alt="GCG examples" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
+                                        </div>
+                                    </div>
+                                    <div class="carousel-caption-box">
+                                        <p class="is-size-6">GCG examples. The model simultaneously describes the scene and produces region masks for phrases mentioned in the caption. For each highlighted phrase, SAMTok decodes the predicted mask tokens into segmentation masks. SAMTok’s compact representation (two tokens per mask) enables efficient, aligned text–mask generation with consistent grounding across multiple phrases within long captions.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 左右控制按钮 -->
+                            <button class="carousel-control-prev" type="button" data-bs-target="#experimentsCarousel1" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Previous</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#experimentsCarousel1" data-bs-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Next</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </section>
+
 
 
     <section class="section">
