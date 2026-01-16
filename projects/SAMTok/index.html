@@ -1,605 +1,692 @@
-
 <!DOCTYPE html>
 <html>
 
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="keywords" content="Multimodal Large Language Models, Image Tokenizer">
-  <meta name="description" content="SAMTok provides a unified mask-token interface for MLLMs.">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Multimodal Large Language Models, Image Tokenizer">
+    <meta name="description" content="SAMTok provides a unified mask-token interface for MLLMs.">
 
-  <title>SAMTok: Representing Any Mask with Two Words</title>
+    <title>SAMTok: Representing Any Mask with Two Words</title>
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/nunito@5.0.18/index.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/fontawesome.min.css">
-  <link rel="stylesheet" href="vendor/image-zoom.css">
-  <link rel="stylesheet" href="index.css">
-  <link rel="icon" href="assets/icon.png">
+    <!-- 字体与图标 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/nunito@5.0.18/index.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/fontawesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1.9.4/css/academicons.min.css">
 
-  <script async src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/js/all.min.js"></script>
-  <script async src="vendor/image-zoom.js"></script>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- 在现有的Font Awesome链接之后添加 -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1.9.4/css/academicons.min.css">
+    <!-- Zoom 插件 -->
+    <script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.0.6/dist/medium-zoom.min.js"></script>
 
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                packages: { '[+]': ['ams'] }
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-  <!-- MathJax配置 -->
-  <script>
-      window.MathJax = {
-          tex: {
-              inlineMath: [['$', '$'], ['\\(', '\\)']],
-              displayMath: [['$$', '$$'], ['\\[', '\\]']],
-              processEscapes: true,
-              packages: {'[+]': ['ams']}
-          },
-          options: {
-              skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
-              ignoreHtmlClass: 'tex2jax_ignore',
-              processHtmlClass: 'tex2jax_process'
-          }
-      };
-  </script>
-  <!-- 加载MathJax库 -->
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f8f9fa;
+            /* 极浅的灰色背景，护眼 */
+            color: #2c3e50;
+        }
 
-  <!-- Bootstrap 5 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        /* ------------------- Hero Section ------------------- */
+        .hero {
+            background-color: #fff;
+            padding-bottom: 3rem;
+        }
 
-  <!-- Bootstrap 5 JS Bundle (包含Popper) -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        .hero .logo {
+            max-width: 400px;
+            /* 限制Logo宽度 */
+            width: 80%;
+            height: auto;
+            margin-bottom: 1.5rem;
+        }
 
-  <!-- 自定义轮播样式 -->
-  <style>
-      /* 自定义轮播样式，适配您的页面设计 */
-      .custom-carousel {
-          position: relative;
-          margin: 2rem 0;
-      }
-      
-      .custom-carousel .carousel-inner {
-          border-radius: 8px;
-          overflow: hidden;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
-      
-      .custom-carousel .carousel-item {
-          background-color: #f8f9fa;
-          padding: 20px;
-      }
-      
-      .custom-carousel .carousel-control-prev,
-      .custom-carousel .carousel-control-next {
-          width: 50px;
-          height: 50px;
-          background-color: rgba(0, 0, 0, 0.5);
-          border-radius: 50%;
-          top: 50%;
-          transform: translateY(-50%);
-          opacity: 0.8;
-          transition: opacity 0.3s ease;
-      }
-      
-      .custom-carousel .carousel-control-prev:hover,
-      .custom-carousel .carousel-control-next:hover {
-          opacity: 1;
-          background-color: rgba(0, 0, 0, 0.7);
-      }
-      
-      .custom-carousel .carousel-control-prev {
-          left: 20px;
-      }
-      
-      .custom-carousel .carousel-control-next {
-          right: 20px;
-      }
-      
-      .custom-carousel .carousel-indicators {
-          bottom: -40px;
-      }
-      
-      .custom-carousel .carousel-indicators button {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          margin: 0 5px;
-          background-color: #6c757d;
-      }
-      
-      .custom-carousel .carousel-indicators button.active {
-          background-color: #007bff;
-      }
-      
-      .carousel-caption-box {
-          background-color: rgba(255, 255, 255, 0.9);
-          padding: 15px;
-          border-radius: 8px;
-          margin-top: 15px;
-          text-align: center;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-  </style>
-  
-  <style>
-    .hero .logo{
-        width: 1024px;
-        max-width: 80%;
-        height: auto;
-        margin-bottom: 0.75rem;
-    }
-  </style>
-  
+        .publication-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #000;
+            /* 纯黑标题，高对比度 */
+            line-height: 1.2;
+            margin-bottom: 1.5rem !important;
+        }
 
+        .author-block a {
+            color: #3273dc;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .author-block a:hover {
+            text-decoration: underline;
+        }
+
+        .publication-links .button {
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .publication-links .button:hover {
+            transform: scale(1.05);
+        }
+
+        /* ------------------- Section Headings ------------------- */
+        .section-title {
+            font-weight: 800;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: #1a1a1a;
+            text-align: center;
+        }
+
+        /* ------------------- Motivation Cards (Modified) ------------------- */
+        .feature-card {
+            /* 修改背景色，不再使用白色，改为淡蓝色以突出显示 */
+            background: #e7f1ff;
+            border-radius: 12px;
+            padding: 2rem 1.5rem;
+            height: 100%;
+            /* 增加边框颜色，增强视觉区分 */
+            border: 2px solid #3273dc;
+            box-shadow: 0 4px 15px rgba(50, 115, 220, 0.15);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(50, 115, 220, 0.25);
+            background: #dbeaff;
+            /* hover时稍微加深 */
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #3273dc;
+        }
+
+        .feature-title {
+            font-weight: 800;
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+            color: #0d2847;
+            /* 更深的蓝色标题 */
+        }
+
+        .feature-text {
+            color: #2c3e50;
+            font-size: 1rem;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        /* ------------------- Figures & Captions ------------------- */
+        .figure-container {
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .figure-img {
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+
+        /* 针对 Figure 2 的特殊缩小处理 - Modified to 45% */
+        .figure-img-small {
+            width: 45% !important;
+            /* 从 60% 修改为 45% */
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+        }
+
+        .caption-content {
+            background-color: #fff;
+            border-left: 4px solid #3273dc;
+            padding: 1rem;
+            text-align: justify;
+            font-size: 1rem;
+            color: #2c3e50;
+            /* 深色文字 */
+            margin-top: 10px;
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        figcaption {
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 0.5rem;
+            display: block;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        /* ------------------- Results Grid ------------------- */
+        .result-card {
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Header class is technically not needed anymore if we remove elements, 
+           but kept for potential layout stability */
+        .result-header {
+            display: none;
+            /* Hide via CSS just in case */
+        }
+
+        /* ------------------- Visualization Carousel (Modified) ------------------- */
+        .viz-section {
+            background-color: #343a40;
+            padding-top: 3rem;
+            padding-bottom: 3rem;
+        }
+
+        .viz-section .section-title {
+            color: #fff;
+        }
+
+        /* 修改容器以适应全宽图片 */
+        .carousel-item-container {
+            background: #212529;
+            padding: 20px 0;
+            /* 减少左右padding */
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: auto;
+            /* 移除最小高度限制，让图片撑开 */
+        }
+
+        .carousel-item img {
+            max-height: none;
+            /* 移除高度限制 */
+            width: 80%;
+            /* 设置为页面宽度的80%，实现尽可能放大 */
+            height: auto;
+            /* 保持比例 */
+            max-width: 100%;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        .carousel-caption-box {
+            background: #ffffff;
+            color: #000000;
+            padding: 1.5rem 2rem;
+            border-radius: 0 0 10px 10px;
+            text-align: justify;
+            font-size: 1rem;
+            line-height: 1.6;
+            /* 限制文字盒子的最大宽度，使其与图片视觉协调，或者保持全宽 */
+            width: 80%;
+            margin: 0 auto;
+            /* 居中 */
+        }
+
+        .carousel-control-prev,
+        .carousel-control-next {
+            width: 8%;
+            /* 加宽点击区域 */
+        }
+    </style>
 </head>
 
 <body>
+    <!-- Hero Section -->
     <section class="hero">
-    <div class="container is-max-desktop">
-      <div class="columns is-centered has-text-centered">
-        <div class="column is-four-fifths">
-          <img class="logo" src="assets/logo.png" alt="logo">
-          <h1 class="title publication-title is-bold">
-            <span>SAMTok: Representing Any Mask with Two Words</span>
-          </h1>
-          <div class="is-size-5 publication-author">
-            <span class="author-block">
-              <a href="https://scholar.google.com/citations?user=dZikW2YAAAAJ&hl=en&oi=ao" target="_blank">Yikang Zhou</a><sup>1,2</sup>,</span>
-            <span class="author-block">
-              <a href="https://scholar.google.com/citations?hl=zh-CN&user=3xu4a5oAAAAJ" target="_blank">Tao Zhang</a><sup>1</sup>,</span>
-            <span class="author-block">
-              <a target="_blank">Dengxian Gong</a><sup>1</sup>,</span>
-            <span class="author-block">
-              <a target="_blank">Yuanzheng Wu</a><sup>1</sup>,</span>
-            <span class="author-block">
-              <a target="_blank">Haochen Wang</a><sup>2</sup>,</span>
-            <span class="author-block">
-              <a target="_blank">Ye Tian</a><sup>2</sup>,</span>
-            <span class="author-block">
-              <a target="_blank">Haobo Yuan</a><sup>1</sup>,</span>
-            <span class="author-block">
-              <a target="_blank">Jiacong Wang</a><sup>2</sup>,</span>
-            <span class="author-block">
-              <a target="_blank">Lu Qi</a><sup>1</sup>,</span>
-            <span class="author-block">
-              <a target="_blank">Hao Fei</a><sup>1</sup>,</span>
-            <span class="author-block">
-              <a href="https://scholar.google.com/citations?hl=zh-CN&user=FjoRmF4AAAAJ" target="_blank">Shunping Ji</a><sup>1,✉️</sup>,</span>
-            <span class="author-block">
-              <a target="_blank">Anran Wang</a><sup>2</sup>,</span>
-            <span class="author-block">
-              <a target="_blank">Zhuochen Wang</a><sup>2</sup>,</span>
-            <span class="author-block">
-              <a target="_blank">Yujing Wang</a><sup>2</sup>,</span>
-            <span class="author-block">
-              <a target="_blank">Cheng CHEN</a><sup>2</sup>,</span>
-            <span class="author-block">
-              <a href="https://lxtgh.github.io/" target="_blank">Xiangtai Li</a><sup>2</sup>,</span>
-          </div>
+        <div class="container is-max-desktop">
+            <div class="columns is-centered has-text-centered">
+                <div class="column is-full">
+                    <img class="logo" src="assets/logo.png" alt="logo">
+                    <h1 class="title publication-title">
+                        SAMTok: Representing Any Mask with Two Words
+                    </h1>
 
-          <div class="is-size-5 publication-institution">
-            <span class="author-block"><sup>1</sup>Wuhan University</span>
-            <span class="author-block"><sup>2</sup>ByteDance</span>
-          </div>
+                    <!-- Authors -->
+                    <div class="is-size-5 publication-author">
+                        <span class="author-block"><a
+                                href="https://scholar.google.com/citations?user=dZikW2YAAAAJ&hl=en&oi=ao"
+                                target="_blank">Yikang Zhou</a><sup>1,2</sup>,</span>
+                        <span class="author-block"><a
+                                href="https://scholar.google.com/citations?hl=zh-CN&user=3xu4a5oAAAAJ"
+                                target="_blank">Tao Zhang</a><sup>1</sup>,</span>
+                        <span class="author-block">Dengxian Gong<sup>1</sup>,</span>
+                        <span class="author-block">Yuanzheng Wu<sup>1</sup>,</span>
+                        <span class="author-block">Haochen Wang<sup>2</sup>,</span>
+                        <span class="author-block">Ye Tian<sup>2</sup>,</span>
+                        <span class="author-block">Haobo Yuan<sup>1</sup>,</span>
+                        <span class="author-block">Jiacong Wang<sup>2</sup>,</span>
+                        <span class="author-block">Lu Qi<sup>1</sup>,</span>
+                        <span class="author-block">Hao Fei<sup>3</sup>,</span>
+                        <span class="author-block"><a
+                                href="https://scholar.google.com/citations?hl=zh-CN&user=FjoRmF4AAAAJ"
+                                target="_blank">Shunping Ji</a><sup>1,✉️</sup>,</span>
+                        <span class="author-block">Anran Wang<sup>2</sup>,</span>
+                        <span class="author-block">Zhuochen Wang<sup>2</sup>,</span>
+                        <span class="author-block">Yujing Wang<sup>2</sup>,</span>
+                        <span class="author-block">Cheng CHEN<sup>2</sup>,</span>
+                        <span class="author-block"><a href="https://lxtgh.github.io/" target="_blank">Xiangtai
+                                Li</a><sup>2,✉️</sup></span>
+                    </div>
 
-          <div class="column has-text-centered">
-            <div class="publication-links">
-              <span class="link-block">
-                <a href="https://arxiv.org/abs/2408.03326"
-                   class="external-link button is-normal is-rounded is-dark">
-                  <span class="icon">
-                      <i class="ai ai-arxiv"></i>
-                  </span>
-                  <span>arXiv</span>
-                </a>
-              </span>
-              <span class="link-block">
-                <a href="https://github.com/bytedance/Sa2VA/tree/main/projects/samtok"
-                   class="external-link button is-normal is-rounded is-dark">
-                  <span class="icon">
-                      <i class="fab fa-github"></i>
-                  </span>
-                  <span>Training Code</span>
-                  </a>
-              </span>
-              <span class="link-block">
-                <a href="https://huggingface.co/collections/zhouyik/samtok"
-                   class="external-link button is-normal is-rounded is-dark">
-                  <span class="icon">
-                      <!-- <p style="font-size:18px">🤗</p> -->
-                      <span class="emoji-icon" aria-hidden="true">🤗</span>
-                  </span>
-                  <span>Checkpoints</span>
-                </a>
-              </span> 
-              <span class="link-block">
-                <a href="https://huggingface.co/spaces/zhouyik/SAMTok"
-                   class="external-link button is-normal is-rounded is-dark">
-                  <span class="icon">
-                      <!-- <p style="font-size:18px">🎨</p> -->
-                      <span class="emoji-icon" aria-hidden="true">🎨</span>
-                  </span>
-                  <span>Live Demo</span>
-                </a>
-              </span>
+                    <div class="is-size-5 publication-institution mt-3">
+                        <span class="author-block"><sup>1</sup>Wuhan University</span> &nbsp;&nbsp;
+                        <span class="author-block"><sup>2</sup>ByteDance</span> &nbsp;&nbsp;
+                        <span class="author-block"><sup>3</sup>National University of Singapore</span>
+                    </div>
+
+                    <div class="publication-links mt-5">
+                        <span class="link-block">
+                            <a href="https://arxiv.org/abs/2408.03326" class="external-link button is-dark is-rounded">
+                                <span class="icon"><i class="ai ai-arxiv"></i></span>
+                                <span>arXiv</span>
+                            </a>
+                        </span>
+                        <span class="link-block">
+                            <a href="https://github.com/bytedance/Sa2VA/tree/main/projects/samtok"
+                                class="external-link button is-dark is-rounded">
+                                <span class="icon"><i class="fab fa-github"></i></span>
+                                <span>Training Code</span>
+                            </a>
+                        </span>
+                        <span class="link-block">
+                            <a href="https://huggingface.co/collections/zhouyik/samtok"
+                                class="external-link button is-dark is-rounded">
+                                <span class="icon">🤗</span>
+                                <span>Checkpoints</span>
+                            </a>
+                        </span>
+                        <span class="link-block">
+                            <a href="https://huggingface.co/spaces/zhouyik/SAMTok"
+                                class="external-link button is-dark is-rounded">
+                                <span class="icon">🎨</span>
+                                <span>Live Demo</span>
+                            </a>
+                        </span>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
-    </div>
     </section>
 
-    <section class="section">
-    <div class="container is-max-desktop">
-      <div class="columns is-centered has-text-centered">
-        <div class="column is-four-fifths">
-          <h2 class="title">Motivation</h2>
-          <div class="content has-text-justified">
-            <p>Building a concise yet powerful pixel-wise MLLM with strong scalability faces significant challenges:
-                <ul>
-                    <li><b>Mask inputs and mask outputs cannot be modeled in a unified manner—mask input understanding relies on complex region-level feature pooling designs, while mask output depends on carefully designed segmentation decoders. Although unified modeling can be achieved through alternative approaches such as bounding boxes or points, this comes at the cost of reduced precision and introduced ambiguity.</b></li>
-                    <li><b>Current state-of-the-art pixel-wise MLLMs cannot directly and concisely apply reinforcement learning (RL) to mask generation tasks, as they use continuous embeddings to connect the MLLM with the segmentation head.</b></li>
-                    <li><b>Specially designed modules added for mask understanding and generation capabilities typically require co-training with the MLLM, and the different training losses and forward pipelines introduce substantial complexity for scaling training with VQA and pure text data.</b></li>
-                    <li><b>Although some explorations attempt to circumvent these issues by treating masks as special images or representing them as text in formats similar to RLE encoding or polygon, this typically incurs enormous inference costs, with a single mask being represented by dozens or even hundreds of tokens.</b></li>
-                </ul>
-            </p>
-          </div>
-          <div class="box" style="margin-top: -20px;">
-              <em>How can we non-intrusively endow base MLLMs (such as the QwenVL series) with pixel-wise capabilities, making the learning process as simple as VQA training—requiring only next-token prediction loss for supervised fine-tuning (SFT) and straightforward reinforcement learning (RL)?</em>
-          </div>
+    <!-- 2. Motivation 重构：Feature Grid -->
+    <section class="section has-background-light">
+        <div class="container is-max-desktop">
+            <h2 class="section-title">Why SAMTok?</h2>
+            <div class="columns is-multiline">
+                <!-- Feature 1 -->
+                <div class="column is-6">
+                    <div class="feature-card has-text-centered">
+                        <div class="feature-icon"><i class="fas fa-language"></i></div>
+                        <h3 class="feature-title">Mask as Language</h3>
+                        <p class="feature-text">
+                            Unifies mask understanding and generation into a single linguistic framework. No need for
+                            separate complex decoders or pooling layers.
+                        </p>
+                    </div>
+                </div>
+                <!-- Feature 2 -->
+                <div class="column is-6">
+                    <div class="feature-card has-text-centered">
+                        <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+                        <h3 class="feature-title">Extreme Efficiency</h3>
+                        <p class="feature-text">
+                            Represents any complex mask with just <strong>two discrete tokens</strong>, significantly
+                            reducing inference cost compared to polygon or RLE formats.
+                        </p>
+                    </div>
+                </div>
+                <!-- Feature 3 -->
+                <div class="column is-6">
+                    <div class="feature-card has-text-centered">
+                        <div class="feature-icon"><i class="fas fa-robot"></i></div>
+                        <h3 class="feature-title">RL-Ready</h3>
+                        <p class="feature-text">
+                            Since masks are discrete tokens, standard Reinforcement Learning (RL) can be directly
+                            applied to optimize pixel-wise generation.
+                        </p>
+                    </div>
+                </div>
+                <!-- Feature 4 -->
+                <div class="column is-6">
+                    <div class="feature-card has-text-centered">
+                        <div class="feature-icon"><i class="fas fa-puzzle-piece"></i></div>
+                        <h3 class="feature-title">Plug-and-Play</h3>
+                        <p class="feature-text">
+                            Non-intrusive design allows any base MLLM (like QwenVL) to acquire pixel-wise capabilities
+                            via simple next-token prediction training.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
     </section>
 
-    <section class="section">
-    <div class="container is-max-desktop">
-      <div class="columns is-centered has-text-centered">
-        <div class="column is-four-fifths">
-          <h2 class="title">Contributions</h2>
-          <img src="figures/teaser.png" alt="Teaser" data-zoom-image />
-          <figcaption>Figure 1</figcaption>
-          <div class="content has-text-justified">
-            <p>We propose SAMTok, a discrete mask tokenizer that can tokenize masks into textual special words and detokenize the textual special words into masks, which can transform masks into a new language for MLLMs to learn like regular text data. As shown in Figure 1, our proposed SAMTok can convert diverse masks into textual special tokens and accurately reconstruct the corresponding masks. Through SAMTok, any MLLM can acquire powerful pixel-wise capabilities by learning like language data through supervised fine-tuning and reinforcement learning, without any additional architectural modifications or specialized loss design.</p>
-            <p>In summary, our contributions are three-fold:
-                <ul>
-                    <li><b>We propose a novel paradigm for MLLMs to model masks as a new language, enabling them to learn mask understanding and generation capabilities just like natural language without requiring architecture modifications or additional loss design.</b></li>
-                    <li><b>We propose SAMTok, which can accurately achieve bidirectional conversion between masks and textual special tokens. Based on SAMTok, the QwenVL series of MLLMs acquire strong pixel-wise capabilities through next token prediction loss, achieving SOTA performance across dozens of diverse benchmarks.</b></li>
-                    <li><b>We design a textual answer-matching reward function that enables MLLMs to perform reinforcement learning on mask generation tasks similar to natural language data, demonstrating significant performance improvements.</b></li>
-                </ul>
-            </p>
-        </div>
-      </div>
-    </div>
-    </section>
+    <!-- Workflow (Previously Contributions) & Architecture -->
+    <section class="section has-background-white">
+        <div class="container is-max-desktop">
+            <!-- 标题修改：Contributions -> Workflow -->
+            <h2 class="section-title">Workflow</h2>
 
-    <section class="section">
-    <div class="container is-max-desktop">
-        <div class="columns is-centered has-text-centered">
-            <div class="column is-four-fifths">
-                <h2 class="title">SAMTok</h2>
-                <img src="figures/tokenizer.png" alt="Tokenizer" data-zoom-image />
+            <!-- Figure 1 -->
+            <div class="figure-container">
+                <img src="figures/teaser.png" alt="Teaser" class="figure-img zoom-img" />
+                <figcaption>Figure 1</figcaption>
+                <div class="caption-content">
+                    We propose SAMTok, a discrete mask tokenizer that can tokenize masks into textual special words and
+                    detokenize the textual special words into masks, which can transform masks into a new language for
+                    MLLMs to learn like regular text data. As shown in Figure 1, our proposed SAMTok can convert diverse
+                    masks into textual special tokens and accurately reconstruct the corresponding masks. Through
+                    SAMTok, any MLLM can acquire powerful pixel-wise capabilities by learning like language data through
+                    supervised fine-tuning and reinforcement learning, without any additional architectural
+                    modifications or specialized loss design.
+                </div>
+            </div>
+
+            <hr style="margin: 3rem 0;">
+
+            <h2 class="section-title">SAMTok Architecture</h2>
+
+            <!-- Figure 2 -->
+            <div class="figure-container">
+                <!-- 重点：figure-img-small 样式已在 CSS 中调整为 45% -->
+                <img src="figures/tokenizer.png" alt="Tokenizer" class="figure-img figure-img-small zoom-img" />
                 <figcaption>Figure 2</figcaption>
-                <div class="content has-text-justified">
-                    <p>
-                        SAMTok has an encoder \(f_{\text{enc}}\), a vector quantizer with codebook \(\mathcal{C}\), 
-                        and a decoder \(f_{\text{dec}}\). Both \(f_{\text{enc}}\) and \(f_{\text{dec}}\) are instantiated 
-                        with a SAM model, which includes an image backbone \(f_{\text{img}}\), a prompt encoder 
-                        \(f_{\text{prm}}\), and a mask decoder \(f_{\text{msk}}\). Given an input image \(\mathcal{I}\) 
-                        and a region \(\mathcal{M}\) (e.g., the area outlined in purple), the SAMTok encoder 
-                        \(f_{\text{enc}}\) first encodes the 2D mask into a mask embedding \(\mathbf{z}\), then 
-                        performs two-stage quantization to obtain discrete mask embeddings \([\mathbf{e}_1, \mathbf{e}_2]\). 
-                        The SAMTok decoder \(f_{\text{dec}}\) reconstructs the 2D mask \(\hat{\mathcal{M}}\) from the 
-                        original image and the region's discrete mask embeddings.
-                    </p>
+                <div class="caption-content">
+                    SAMTok has an encoder \(f_{\text{enc}}\), a vector quantizer with codebook \(\mathcal{C}\), and a
+                    decoder \(f_{\text{dec}}\). Both \(f_{\text{enc}}\) and \(f_{\text{dec}}\) are instantiated with a
+                    SAM model, which includes an image backbone \(f_{\text{img}}\), a prompt encoder \(f_{\text{prm}}\),
+                    and a mask decoder \(f_{\text{msk}}\). Given an input image \(\mathcal{I}\) and a region
+                    \(\mathcal{M}\) (e.g., the area outlined in purple), the SAMTok encoder \(f_{\text{enc}}\) first
+                    encodes the 2D mask into a mask embedding \(\mathbf{z}\), then performs two-stage quantization to
+                    obtain discrete mask embeddings \([\mathbf{e}_1, \mathbf{e}_2]\). The SAMTok decoder
+                    \(f_{\text{dec}}\) reconstructs the 2D mask \(\hat{\mathcal{M}}\) from the original image and the
+                    region's discrete mask embeddings.
                 </div>
-                <img src="figures/vlm_samtok.png" alt="vlm_samtok" data-zoom-image />
+            </div>
+
+            <!-- Figure 3 -->
+            <div class="figure-container">
+                <img src="figures/vlm_samtok.png" alt="vlm_samtok" class="figure-img zoom-img" />
                 <figcaption>Figure 3</figcaption>
-                <div class="content has-text-justified">
-                    <p>
-                        For the mask understanding task, SAMTok first tokenizes region masks into quantization codes, 
-                        then formats them into mask words, which are used in the MLLM prompt to refer to the corresponding 
-                        image regions. For the mask generation task, the MLLM first produces mask words according to the 
-                        instruction, then maps these mask words to quantization codes, after which SAMTok reconstructs 
-                        the 2D masks.
-                    </p>
+                <div class="caption-content">
+                    For the mask understanding task, SAMTok first tokenizes region masks into quantization codes, then
+                    formats them into mask words, which are used in the MLLM prompt to refer to the corresponding image
+                    regions. For the mask generation task, the MLLM first produces mask words according to the
+                    instruction, then maps these mask words to quantization codes, after which SAMTok reconstructs the
+                    2D masks.
                 </div>
             </div>
+
         </div>
-    </div>
     </section>
 
-
+    <!-- Main Results (Grid Layout - Text Headers Removed) -->
     <section class="section">
-    <div class="container" style="margin-bottom: 2vh;">
-        <div class="columns is-centered has-text-centered">
-            <div class="column is-four-fifths">
-                <h2 class="title">Experiments</h2>
-                <div class="content has-text-justified">
-                    
-                    <!-- Table 1-3 轮播 -->
-                    <div class="custom-carousel">
-                        <h4 class="subtitle is-5 mb-4">Main Results</h4>
-                        <div id="experimentsCarousel1" class="carousel slide" data-bs-ride="carousel">
-                            <!-- 指示器 -->
-                            <div class="carousel-indicators">
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="1" aria-label="Slide 2"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="2" aria-label="Slide 3"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="3" aria-label="Slide 4"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="4" aria-label="Slide 5"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="5" aria-label="Slide 6"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="6" aria-label="Slide 7"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="7" aria-label="Slide 8"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="8" aria-label="Slide 9"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="9" aria-label="Slide 10"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="10" aria-label="Slide 11"></button>
-                            </div>
-                            
-                            <!-- 轮播项 -->
-                            <div class="carousel-inner">
-                                <div class="carousel-item active">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/table1.png" alt="Table 1: Main Results" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <!-- <div class="carousel-caption-box">
-                                        <p class="is-size-6">Table 1: Main experimental results showing performance comparison</p>
-                                    </div> -->
-                                </div>
-                                
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/table2.png" alt="Table 2: Ablation Studies" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <!-- <div class="carousel-caption-box">
-                                        <p class="is-size-6">Table 2: Ablation studies on different components</p>
-                                    </div> -->
-                                </div>
-                                
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/table3.png" alt="Table 3: Comparison with SOTA" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <!-- <div class="carousel-caption-box">
-                                        <p class="is-size-6">Table 3: Comparison with state-of-the-art methods</p>
-                                    </div> -->
-                                </div>
+        <div class="container is-max-desktop">
+            <h2 class="section-title">Main Results</h2>
 
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/table4.png" alt="Table 4: Performance Breakdown" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <!-- <div class="carousel-caption-box">
-                                        <p class="is-size-6">Table 4: Detailed performance breakdown by category</p>
-                                    </div> -->
-                                </div>
-                                
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/table5.png" alt="Table 5: Efficiency Analysis" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <!-- <div class="carousel-caption-box">
-                                        <p class="is-size-6">Table 5: Efficiency and computational cost analysis</p>
-                                    </div> -->
-                                </div>
-                                
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/table6.png" alt="Table 6: Hyperparameter Study" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <!-- <div class="carousel-caption-box">
-                                        <p class="is-size-6">Table 6: Hyperparameter sensitivity study</p>
-                                    </div> -->
-                                </div>
-                                
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/table7.png" alt="Table 7: Cross-dataset Evaluation" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <!-- <div class="carousel-caption-box">
-                                        <p class="is-size-6">Table 7: Cross-dataset generalization evaluation</p>
-                                    </div> -->
-                                </div>
-                                
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/table8.png" alt="Table 8: Qualitative Results" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <!-- <div class="carousel-caption-box">
-                                        <p class="is-size-6">Table 8: Qualitative analysis and case studies</p>
-                                    </div> -->
-                                </div>
-                                
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/table9.png" alt="Table 9: Failure Analysis" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <!-- <div class="carousel-caption-box">
-                                        <p class="is-size-6">Table 9: Failure case analysis and limitations</p>
-                                    </div> -->
-                                </div>
-                                
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/table10.png" alt="Table 10: User Study" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <!-- <div class="carousel-caption-box">
-                                        <p class="is-size-6">Table 10: User study and human evaluation results</p>
-                                    </div> -->
-                                </div>
-                                
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/table11.png" alt="Table 11: Statistical Significance" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <!-- <div class="carousel-caption-box">
-                                        <p class="is-size-6">Table 11: Statistical significance tests</p>
-                                    </div> -->
-                                </div>
+            <!-- Removed text captions (result-header) as requested -->
 
-                            </div>
-                            
-                            <!-- 左右控制按钮 -->
-                            <button class="carousel-control-prev" type="button" data-bs-target="#experimentsCarousel1" data-bs-slide="prev">
-                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                                <span class="visually-hidden">Previous</span>
-                            </button>
-                            <button class="carousel-control-next" type="button" data-bs-target="#experimentsCarousel1" data-bs-slide="next">
-                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                                <span class="visually-hidden">Next</span>
-                            </button>
+            <div class="row">
+                <div class="col-md-12 result-card">
+                    <img src="figures/table1.png" class="w-100 zoom-img">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="result-card">
+                        <img src="figures/table2.png" class="w-100 zoom-img">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="result-card">
+                        <img src="figures/table3.png" class="w-100 zoom-img">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="result-card">
+                        <img src="figures/table4.png" class="w-100 zoom-img">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="result-card">
+                        <img src="figures/table5.png" class="w-100 zoom-img">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="result-card">
+                        <img src="figures/table6.png" class="w-100 zoom-img">
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <div class="result-card">
+                        <img src="figures/table7.png" class="w-100 zoom-img">
+                    </div>
+                </div>
+            </div>
+
+            <!-- More Results Collapse -->
+            <div class="text-center mt-4">
+                <button class="button is-rounded" type="button" data-bs-toggle="collapse" data-bs-target="#moreResults">
+                    <span>Show More Experiments</span>
+                    <span class="icon is-small"><i class="fas fa-angle-down"></i></span>
+                </button>
+            </div>
+
+            <div class="collapse mt-4" id="moreResults">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="result-card">
+                            <img src="figures/table8.png" class="w-100 zoom-img">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="result-card">
+                            <img src="figures/table9.png" class="w-100 zoom-img">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="result-card">
+                            <img src="figures/table10.png" class="w-100 zoom-img">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="result-card">
+                            <img src="figures/table11.png" class="w-100 zoom-img">
                         </div>
                     </div>
                 </div>
             </div>
+
         </div>
-    </div>
     </section>
 
+    <!-- Visualizations (Full Width) -->
+    <section class="viz-section">
+        <!-- 使用 container-fluid 允许全宽显示 -->
+        <div class="container-fluid" style="padding: 0;">
+            <h2 class="section-title">Visualizations</h2>
 
-    <section class="section">
-    <div class="container" style="margin-bottom: 2vh;">
-        <div class="columns is-centered has-text-centered">
-            <div class="column is-four-fifths">
-                <h2 class="title">Visualizations</h2>
-                <div class="content has-text-justified">
-                    
-                    <!-- Table 1-3 轮播 -->
-                    <div class="custom-carousel">
-                        <h4 class="subtitle is-5 mb-4"></h4>
-                        <div id="experimentsCarousel1" class="carousel slide" data-bs-ride="carousel">
-                            <!-- 指示器 -->
-                            <div class="carousel-indicators">
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="1" aria-label="Slide 2"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="2" aria-label="Slide 3"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="3" aria-label="Slide 4"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="4" aria-label="Slide 5"></button>
-                                <button type="button" data-bs-target="#experimentsCarousel1" data-bs-slide-to="5" aria-label="Slide 6"></button>
-                            </div>
-                            
-                            <!-- 轮播项 -->
-                            <div class="carousel-inner">
-                                <div class="carousel-item active">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/fig5.png" alt="SFT vs. RL" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <div class="carousel-caption-box">
-                                        <p class="is-size-6">SFT vs. RL. Examples are sampled from the GRES benchmark. RL finds more target objects, localizes relative positions better, and produces cleaner masks than SFT across diverse scenes.</p>
-                                    </div>
-                                </div>
-                                
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/fig6.png" alt="Region mask reconstruction examples" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <div class="carousel-caption-box">
-                                        <p class="is-size-6">Region mask reconstruction examples. For each region, the ground-truth mask is tokenized into two discrete codes, and SAMTok reconstructs the mask solely from the original image and the quantized mask tokens. SAMTok preserves fine structures for small, thin, or irregular objects even under challenging lighting or clutter. Since SAMTok is fully decoupled from the MLLM, its reconstruction quality remains stable regardless of downstream model training—unlike joint-training mask tokenizers that tend to collapse to elliptical or blurred masks.</p>
-                                    </div>
-                                </div>
-                                
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/fig7.png" alt="Panoptic scene graph generation(PSG) examples" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <div class="carousel-caption-box">
-                                        <p class="is-size-6">Panoptic scene graph generation(PSG) examples. The model predicts subject–relation–object triplets where both subject and object categories are paired with their corresponding segmentation masks, represented through mask tokens. SAMTok’s interface allows the MLLM to generate consistent object masks and relational descriptions simultaneously, demonstrating strong alignment between textual predicates and pixel-grounded regions.</p>
-                                    </div>
-                                </div>
+            <div id="vizCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-indicators">
+                    <button type="button" data-bs-target="#vizCarousel" data-bs-slide-to="0" class="active"></button>
+                    <button type="button" data-bs-target="#vizCarousel" data-bs-slide-to="1"></button>
+                    <button type="button" data-bs-target="#vizCarousel" data-bs-slide-to="2"></button>
+                    <button type="button" data-bs-target="#vizCarousel" data-bs-slide-to="3"></button>
+                    <button type="button" data-bs-target="#vizCarousel" data-bs-slide-to="4"></button>
+                    <button type="button" data-bs-target="#vizCarousel" data-bs-slide-to="5"></button>
+                </div>
 
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/fig8.png" alt="GRES examples" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <div class="carousel-caption-box">
-                                        <p class="is-size-6">GRES examples. Given a natural-language referring expression, the MLLM outputs two mask tokens that decode into the final segmentation mask. SAMTok enables precise grounding for expressions involving fine attributes, part-level targets, or contextual reasoning. The examples show robustness to ambiguous descriptions, occlusion, and multi-object scenes.</p>
-                                    </div>
-                                </div>
-                                
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/fig9.png" alt="Region Caption examples" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <div class="carousel-caption-box">
-                                        <p class="is-size-6">Region Caption examples. Each visualization shows a region mask input (tokenized as two mask tokens) and the model’s generated description. SAMTok provides unambiguous spatial grounding, enabling the MLLM to generate accurate and context-aware region descriptions about attributes, roles, and interactions.</p>
-                                    </div>
-                                </div>
-                                
-                                <div class="carousel-item">
-                                    <div class="box m-3">
-                                        <div class="content has-text-centered">
-                                            <img src="figures/fig10.png" alt="GCG examples" class="d-block w-100" style="max-height: 500px; object-fit: contain;">
-                                        </div>
-                                    </div>
-                                    <div class="carousel-caption-box">
-                                        <p class="is-size-6">GCG examples. The model simultaneously describes the scene and produces region masks for phrases mentioned in the caption. For each highlighted phrase, SAMTok decodes the predicted mask tokens into segmentation masks. SAMTok’s compact representation (two tokens per mask) enables efficient, aligned text–mask generation with consistent grounding across multiple phrases within long captions.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- 左右控制按钮 -->
-                            <button class="carousel-control-prev" type="button" data-bs-target="#experimentsCarousel1" data-bs-slide="prev">
-                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                                <span class="visually-hidden">Previous</span>
-                            </button>
-                            <button class="carousel-control-next" type="button" data-bs-target="#experimentsCarousel1" data-bs-slide="next">
-                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                                <span class="visually-hidden">Next</span>
-                            </button>
+                <div class="carousel-inner">
+                    <!-- Item 1 -->
+                    <div class="carousel-item active">
+                        <div class="carousel-item-container">
+                            <img src="figures/fig5.png" alt="SFT vs RL">
+                        </div>
+                        <div class="carousel-caption-box">
+                            <strong>SFT vs. RL.</strong> Examples are sampled from the GRES benchmark. RL finds more
+                            target objects, localizes relative positions better, and produces cleaner masks than SFT
+                            across diverse scenes.
                         </div>
                     </div>
+
+                    <!-- Item 2 -->
+                    <div class="carousel-item">
+                        <div class="carousel-item-container">
+                            <img src="figures/fig6.png" alt="Reconstruction">
+                        </div>
+                        <div class="carousel-caption-box">
+                            <strong>Region mask reconstruction examples.</strong> For each region, the ground-truth mask
+                            is tokenized into two discrete codes, and SAMTok reconstructs the mask solely from the
+                            original image and the quantized mask tokens. SAMTok preserves fine structures for small,
+                            thin, or irregular objects even under challenging lighting or clutter. Since SAMTok is fully
+                            decoupled from the MLLM, its reconstruction quality remains stable regardless of downstream
+                            model training—unlike joint-training mask tokenizers that tend to collapse to elliptical or
+                            blurred masks.
+                        </div>
+                    </div>
+
+                    <!-- Item 3 -->
+                    <div class="carousel-item">
+                        <div class="carousel-item-container">
+                            <img src="figures/fig7.png" alt="PSG">
+                        </div>
+                        <div class="carousel-caption-box">
+                            <strong>Panoptic scene graph generation(PSG) examples.</strong> The model predicts
+                            subject–relation–object triplets where both subject and object categories are paired with
+                            their corresponding segmentation masks, represented through mask tokens. SAMTok’s interface
+                            allows the MLLM to generate consistent object masks and relational descriptions
+                            simultaneously, demonstrating strong alignment between textual predicates and pixel-grounded
+                            regions.
+                        </div>
+                    </div>
+
+                    <!-- Item 4 -->
+                    <div class="carousel-item">
+                        <div class="carousel-item-container">
+                            <img src="figures/fig8.png" alt="GRES">
+                        </div>
+                        <div class="carousel-caption-box">
+                            <strong>GRES examples.</strong> Given a natural-language referring expression, the MLLM
+                            outputs two mask tokens that decode into the final segmentation mask. SAMTok enables precise
+                            grounding for expressions involving fine attributes, part-level targets, or contextual
+                            reasoning. The examples show robustness to ambiguous descriptions, occlusion, and
+                            multi-object scenes.
+                        </div>
+                    </div>
+
+                    <!-- Item 5 -->
+                    <div class="carousel-item">
+                        <div class="carousel-item-container">
+                            <img src="figures/fig9.png" alt="Region Caption">
+                        </div>
+                        <div class="carousel-caption-box">
+                            <strong>Region Caption examples.</strong> Each visualization shows a region mask input
+                            (tokenized as two mask tokens) and the model’s generated description. SAMTok provides
+                            unambiguous spatial grounding, enabling the MLLM to generate accurate and context-aware
+                            region descriptions about attributes, roles, and interactions.
+                        </div>
+                    </div>
+
+                    <!-- Item 6 -->
+                    <div class="carousel-item">
+                        <div class="carousel-item-container">
+                            <img src="figures/fig10.png" alt="GCG">
+                        </div>
+                        <div class="carousel-caption-box">
+                            <strong>GCG examples.</strong> The model simultaneously describes the scene and produces
+                            region masks for phrases mentioned in the caption. For each highlighted phrase, SAMTok
+                            decodes the predicted mask tokens into segmentation masks. SAMTok’s compact representation
+                            (two tokens per mask) enables efficient, aligned text–mask generation with consistent
+                            grounding across multiple phrases within long captions.
+                        </div>
+                    </div>
+
                 </div>
+
+                <button class="carousel-control-prev" type="button" data-bs-target="#vizCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#vizCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
             </div>
         </div>
-    </div>
     </section>
 
-
-
+    <!-- Citation -->
     <section class="section">
-    <div class="container is-max-desktop">
-      <div class="columns is-centered has-text-centered">
-        <div class="column is-four-fifths">
-          <h3 class="title">Citation</h3>
-          <div class="caption">Please kindly cite our paper if you find this project helpful.</div>
+        <div class="container is-max-desktop">
+            <h2 class="title is-4 has-text-centered">Citation</h2>
+            <div class="box has-background-light" style="border: 1px solid #ccc;">
+                <pre style="background: transparent;"><code>@article{zhou2024samtok,
+  title={SAMTok: Representing Any Mask with Two Words},
+  author={Zhou, Yikang and Zhang, Tao and Gong, Dengxian and others},
+  journal={arXiv preprint arXiv:2408.03326},
+  year={2024}
+}</code></pre>
+            </div>
         </div>
-      </div>
-      <!-- <div class="columns is-centered">
-        <pre><code>@inproceedings{liu2025unipixel,<br>  title={UniPixel: Unified Object Referring and Segmentation for Pixel-Level Visual Reasoning},<br>  author={Liu, Ye and Ma, Zongyang and Pu, Junfu and Qi, Zhongang and Wu, Yang and Ying, Shan and Chen, Chang Wen},<br>  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},<br>  year={2025}<br>}</code></pre>
-      </div> -->
-    </div>
     </section>
 
+    <footer class="footer">
+        <div class="content has-text-centered">
+            <p>
+                This website is licensed under a <a rel="license"
+                    href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0
+                    International License</a>.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // 初始化 Medium Zoom
+        mediumZoom('.zoom-img', {
+            margin: 24,
+            background: '#fff',
+            scrollOffset: 0
+        });
+    </script>
 </body>
 
+</html>
